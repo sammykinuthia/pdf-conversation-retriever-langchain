@@ -3,9 +3,11 @@ from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain.chains import ConversationalRetrievalChain
 from langchain_community.chat_models import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
+from langchain.text_splitter import CharacterTextSplitter
 from langchain.indexes import VectorstoreIndexCreator
 from langchain.indexes.vectorstore import VectorStoreIndexWrapper
 from langchain_community.vectorstores import Chroma
+from langchain.embeddings.openai import OpenAIEmbeddings
 import secret
 
 
@@ -41,7 +43,16 @@ os.environ["OPENAI_API_KEY"] = secret.OPENAI_API_KEY
 
 def myChatGPT(query, chat_history):
     loader = UnstructuredFileLoader("data.txt")
-    index = VectorstoreIndexCreator().from_loaders([loader])
+    text_splitter = CharacterTextSplitter(
+        separator="\n",
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len,
+    )
+    documents = text_splitter.split_documents(loader.load())
+    embeddings = OpenAIEmbeddings()
+    index = VectorstoreIndexCreator(embedding=embeddings).from_documents(documents)
+
     # index = VectorstoreIndexCreator().from_loaders([loader])
 
     chain = ConversationalRetrievalChain.from_llm(
@@ -56,4 +67,3 @@ def myChatGPT(query, chat_history):
     return result["answer"]
 
 
-# # 12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,1,2
